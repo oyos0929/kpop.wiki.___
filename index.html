@@ -15,11 +15,13 @@
     .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
     .tab-btn { padding: 8px 16px; border: none; background: #e0e0e0; border-radius: 20px; cursor: pointer; font-weight: bold; }
     .tab-btn.active { background: #ff007f; color: white; }
-    .word-card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+    .word-card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); position: relative; }
     .word-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
     .word-title { font-size: 1.5rem; color: #ff007f; font-weight: bold; }
+    .card-actions { display: flex; gap: 10px; align-items: center; }
     .bookmark-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #ccc; }
     .bookmark-btn.active { color: #ffb700; }
+    .delete-btn { background: none; border: none; font-size: 1.1rem; cursor: pointer; color: #999; }
     .meaning { font-weight: bold; font-size: 1.1rem; margin-bottom: 10px; color: #444; }
     .lyric-box { background: #f9f9f9; border-left: 4px solid #7f00ff; padding: 10px 15px; border-radius: 4px; font-style: italic; margin-bottom: 8px; }
     .song-info { font-size: 0.85rem; color: #666; text-align: right; }
@@ -51,7 +53,7 @@
     <div id="wordList"></div>
 
     <div class="form-section">
-      <h2>＋ 新しい単語を登録する (Wiki風投稿)</h2>
+      <h2>＋ 新しい単語を登録する</h2>
       <form id="addWordForm" onsubmit="addWord(event)">
         <div class="form-group">
           <label>英単語</label>
@@ -69,19 +71,25 @@
           <label>曲名 & アーティスト名</label>
           <input type="text" id="inputSong" required placeholder="例: UNFORGIVEN - LE SSERAFIM">
         </div>
-        <button type="submit" class="submit-btn">みんなの辞書に追加する</button>
+        <button type="submit" class="submit-btn">単語帳に追加・保存する</button>
       </form>
     </div>
   </div>
 
   <script>
-    let words = [
+    const defaultWords = [
       { id: 1, word: "Drama", meaning: "劇、ドラマのような出来事", lyric: "Yeah I'm the Drama", song: "Drama - aespa", bookmarked: false },
       { id: 2, word: "Supernatural", meaning: "超自然的な、不可思議な", lyric: "It's supernatural", song: "Supernatural - NewJeans", bookmarked: true },
       { id: 3, word: "Savage", meaning: "残忍な、容赦ない、めちゃくちゃかっこいい", lyric: "Oh my gosh! Don't you know I'm a Savage?", song: "Savage - aespa", bookmarked: false }
     ];
 
+    // スマホの保存領域(localStorage)からデータを読み込む
+    let words = JSON.parse(localStorage.getItem('kpop_vocab_data')) || defaultWords;
     let currentFilter = 'all';
+
+    function saveData() {
+      localStorage.setItem('kpop_vocab_data', JSON.stringify(words));
+    }
 
     function render() {
       const listEl = document.getElementById('wordList');
@@ -107,7 +115,10 @@
         card.innerHTML = `
           <div class="word-header">
             <span class="word-title">${item.word}</span>
-            <button class="bookmark-btn ${item.bookmarked ? 'active' : ''}" onclick="toggleBookmark(${item.id})">★</button>
+            <div class="card-actions">
+              <button class="bookmark-btn ${item.bookmarked ? 'active' : ''}" onclick="toggleBookmark(${item.id})">★</button>
+              <button class="delete-btn" onclick="deleteWord(${item.id})" title="削除">🗑️</button>
+            </div>
           </div>
           <div class="meaning">意味: ${item.meaning}</div>
           <div class="lyric-box">"${item.lyric}"</div>
@@ -121,6 +132,15 @@
       const target = words.find(w => w.id === id);
       if (target) {
         target.bookmarked = !target.bookmarked;
+        saveData();
+        render();
+      }
+    }
+
+    function deleteWord(id) {
+      if (confirm('この単語を削除しますか？')) {
+        words = words.filter(w => w.id !== id);
+        saveData();
         render();
       }
     }
@@ -143,9 +163,10 @@
         bookmarked: false
       };
       words.unshift(newWord);
+      saveData();
       document.getElementById('addWordForm').reset();
       render();
-      alert('単語を追加しました！');
+      alert('保存しました！次回開いたときも残ります。');
     }
 
     render();
